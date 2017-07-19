@@ -1,4 +1,4 @@
-License: BSD-4-clause
+License: BSD-3-clause
 Copyright 2017, Digital Humanities - Fondazione Bruno Kessler
 
 Redistribution and use in source and binary forms, with or without modification, 
