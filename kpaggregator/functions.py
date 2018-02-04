@@ -88,7 +88,7 @@ def compute_keywords_cosine(keywords_dic, mean_kw_vectors, threshold_multiwords,
     return cosines_dict
 
 
-def compute_keywords_cosine_all(keywords_dic, mean_kw_vectors, threshold_multiwords, threshold_single):
+def compute_keywords_cosine_compare_all(keywords_dic, mean_kw_vectors, threshold_multiwords, threshold_single):
     cosines_dict = dict()
     max_kw_lenght = max(keywords_dic.keys())
     for x in range(max_kw_lenght, 1, -1):
@@ -115,6 +115,39 @@ def compute_keywords_cosine_all(keywords_dic, mean_kw_vectors, threshold_multiwo
                         if cosine_value[0][0] > threshold_single:
                             pair_string = k1 + ' ' + k2
                             cosines_dict[pair_string] = cosine_value[0][0]
+
+    return cosines_dict
+
+
+def compute_keywords_cosine_all(keywords_dic, mean_kw_vectors, threshold_multiwords, threshold_single):
+    cosines_dict = dict()
+    max_kw_lenght = max(keywords_dic.keys())
+    for x in range(max_kw_lenght, 1, -1):
+        if x in keywords_dic:
+            for k1 in keywords_dic[x]:
+                for y in range(x - 1, 0, -1):
+                    if y in keywords_dic:
+                        for k2 in keywords_dic[y]:
+                            if len(mean_kw_vectors[k1]) > 1 and len(mean_kw_vectors[k2]) > 1:
+                                vector_keyword_one = mean_kw_vectors[k1].reshape(1, -1)
+                                vector_keyword_two = mean_kw_vectors[k2].reshape(1, -1)
+                                cosine_value = cosine_similarity(vector_keyword_one, vector_keyword_two)
+                                if cosine_value[0][0] > threshold_multiwords:
+                                    pair_string = k1 + ' ' + k2
+                                    cosines_dict[pair_string] = cosine_value[0][0]
+
+    if 1 in keywords_dic:
+        for k1 in keywords_dic[1]:
+            for k2 in keywords_dic[1]:
+                if k1 != k2:
+                    if len(mean_kw_vectors[k1]) > 1 and len(mean_kw_vectors[k2]) > 1:
+                        vector_keyword_one = mean_kw_vectors[k1].reshape(1, -1)
+                        vector_keyword_two = mean_kw_vectors[k2].reshape(1, -1)
+                        cosine_value = cosine_similarity(vector_keyword_one, vector_keyword_two)
+                        if cosine_value[0][0] > threshold_single:
+                            pair_string = k1 + ' ' + k2
+                            cosines_dict[pair_string] = cosine_value[0][0]
+                            
     return cosines_dict
 
 
@@ -132,7 +165,28 @@ def sort_keyword_pairs(cosines_dict,tfidf_dict):
             sorted_pairs_cosines_dict[pair_string] = cosines_dict[pair]
         elif tfidf_a == tfidf_b:
             pair_string = kw1 + ' ' + kw2
-            sorted_pairs_cosines_dict[pair_string]=cosines_dict[pair]
+            sorted_pairs_cosines_dict[pair_string] = cosines_dict[pair]
+            pair_string = kw2 + ' ' + kw1
+            sorted_pairs_cosines_dict[pair_string] = cosines_dict[pair]
+    return sorted_pairs_cosines_dict
+
+def sort_keyword_pairs_reverse(cosines_dict,tfidf_dict):
+    sorted_pairs_cosines_dict=dict()
+    for pair in cosines_dict.keys():
+        kw1, kw2 = pair.rstrip().split(" ")
+        tfidf_a = tfidf_dict[kw1]
+        tfidf_b = tfidf_dict[kw2]
+        if tfidf_a < tfidf_b:
+            pair_string = kw1 + ' ' + kw2
+            sorted_pairs_cosines_dict[pair_string] = cosines_dict[pair]
+        elif tfidf_a > tfidf_b:
+            pair_string = kw2 + ' ' + kw1
+            sorted_pairs_cosines_dict[pair_string] = cosines_dict[pair]
+        elif tfidf_a == tfidf_b:
+            pair_string = kw1 + ' ' + kw2
+            sorted_pairs_cosines_dict[pair_string] = cosines_dict[pair]
+            pair_string = kw2 + ' ' + kw1
+            sorted_pairs_cosines_dict[pair_string] = cosines_dict[pair]
     return sorted_pairs_cosines_dict
 
 def merge_on_first_keyword(sorted_pairs_cosines_dict):
@@ -164,14 +218,19 @@ def merge_overlapping_groups(groups_list, overlap_value):
     while overlap_found==True:
         overlap_found=False
         max_index=len(lists_list)-1
-        for x in range(0, max_index, +1):
+        for x in range(0, max_index,+1):
             for y in range(x+1, max_index+1, +1):
                 a = lists_list[x]
                 b = lists_list[y]
+                
                 a_multiset = collections.Counter(a)
                 b_multiset = collections.Counter(b)
                 overlap = list((a_multiset & b_multiset).elements())
+
+
                 if  len(overlap) > overlap_value*(min(len(a), len(b))):
+                    
+
                     overlap_found=True
                     items_to_remove[x]=1
                     items_to_remove[y]=1
@@ -184,7 +243,8 @@ def merge_overlapping_groups(groups_list, overlap_value):
                             new_groups[x] = list(lists_list[x])
                         new_groups[x].extend(lists_list[y])
         groups_next_cycle=list()
-        for x in range(0, max_index, +1):
+        
+        for x in range(0, max_index+1, +1):
             if x in new_groups.keys():
                 groups_next_cycle.append(new_groups[x])
             elif x not in items_to_remove.keys():
@@ -192,8 +252,12 @@ def merge_overlapping_groups(groups_list, overlap_value):
         lists_list=list()
         for i in groups_next_cycle:
             lists_list.append(sorted(list(set(i))))
+        
+        lists_list=list(set(tuple(i) for i in lists_list))
+        
         items_to_remove = dict()
         new_groups = dict()
+    
     return lists_list
 
 def merge_overlapping_groups_of_2(groups_list):
@@ -225,7 +289,7 @@ def merge_overlapping_groups_of_2(groups_list):
                                 new_groups[x] = list(lists_list[x])
                             new_groups[x].extend(lists_list[y])
         groups_next_cycle = list()
-        for x in range(0, max_index, +1):
+        for x in range(0, max_index+1, +1):
             if x in new_groups.keys():
                 groups_next_cycle.append(new_groups[x])
             elif x not in items_to_remove.keys():
