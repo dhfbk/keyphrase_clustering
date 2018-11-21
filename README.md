@@ -7,7 +7,7 @@ To obtain the list of keywods we relied on [KD: Keyphrase Digger](http://dh.fbk.
 
 An example of the input file is available in `sample_input/sample.txt`. Each line should contain a keyphrase and an associated weight (teb separated). Keyphrases made of two or more words need to be joint by an underscore.
 
-To use the code, unzip the file `glove.6B.50d.txt.zip` in the main folder and run:
+To use the code, download the GloVe vectors (http://nlp.stanford.edu/data/glove.6B.zip) and unzip the file in the main folder.  Then run:
 ```
 python keyphrase_aggregator.py -d sample_input/
 ```
